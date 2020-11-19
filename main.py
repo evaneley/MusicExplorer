@@ -35,7 +35,7 @@ trv.pack(fill="both", expand=1, padx=5, pady=5)
 trv.heading(1, text="Song")
 trv.heading(2, text="Artist")
 trv.heading(3, text="Album")
-trv.heading(4, text="Year")
+trv.heading(4, text="Date")
 
 # Variables
 artist_query = StringVar()
@@ -55,11 +55,14 @@ def update_artist(res):
 
 
 def update_song(res):
+    yo = False
     trv.delete(*trv.get_children())
     for song in res["recording-list"]:
         trv.insert('', 'end', values=(
-            song["title"], song["artist-credit"][0]["name"], "null", "null"))
-        # print(song)
+            song["title"], song["artist-credit"][0]["name"], song["release-list"][0]["title"], song["release-list"][0]["date"]))
+        if yo == False:
+            # print(song)
+            yo = True
         # print()
 
 
@@ -94,7 +97,6 @@ def yt_search():
     search_term_string = ""
     for i in search_term:
         search_term_string += i + "+"
-    print(search_term_string)
     search_url = "https://www.youtube.com/results?search_query=" + search_term_string
     webbrowser.open(search_url)
 
