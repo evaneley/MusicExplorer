@@ -90,11 +90,9 @@ def clear():
 
 # Searches what the user has entered on YouTube
 def yt_search():
-    print(yt_query.get())
     search_term = yt_query.get().split()
     search_term_string = ""
     for i in search_term:
-        print(i)
         search_term_string += i + "+"
     print(search_term_string)
     search_url = "https://www.youtube.com/results?search_query=" + search_term_string
