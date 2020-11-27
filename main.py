@@ -42,26 +42,46 @@ artist_query = StringVar()
 song_query = StringVar()
 yt_query = StringVar()
 
-# Used to update table
+
+def get_release(song):
+    date = ""
+    album = ""
+    if "release-list" in song:
+        for release in song["release-list"]:
+            if "date" in release and release["date"] != "":
+                #print(release["date"])
+                if date == "":
+                    date = release["date"]
+                    album = release["title"]
+                else:
+                    if int(release["date"][0:4]) < int(date[0:4]):
+                        date = release["date"]
+                        album = release["title"]
+    
+    #print(date)
+    #print(album)
+    return album, date
+        
 
 
+# Update table with artist
 def update_artist(res):
     trv.delete(*trv.get_children())
     for artist in res["artist-list"]:
         trv.insert('', 'end', values=("null", artist["name"], "null", "null"))
 
 
-"""Potential Blog post: Documentation says that it is a 'recording-list' but it is actually a 'release-list' """
-
-
+# Update table with songs
 def update_song(res):
     yo = False
     trv.delete(*trv.get_children())
     for song in res["recording-list"]:
+        #Get Album and Date
+        album, date = get_release(song)
         trv.insert('', 'end', values=(
-            song["title"], song["artist-credit"][0]["name"], song["release-list"][0]["title"], song["release-list"][0]["date"]))
+            song["title"], song["artist-credit"][0]["name"], album, date))
         if yo == False:
-            # print(song)
+
             yo = True
         # print()
 
@@ -112,7 +132,7 @@ def update_yt():
 
 
 # Search by Artist
-artist_lbl = Label(search_artist_fr, text="By Artist")
+artist_lbl = Label(search_artist_fr, text="By Artist\t")
 artist_lbl.pack(side=tk.LEFT, padx=10)
 artist_ent = Entry(search_artist_fr, textvariable=artist_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
@@ -120,7 +140,7 @@ artist_btn = Button(search_artist_fr, text="Search", command=artist_search)
 artist_btn.pack(side=tk.LEFT, padx=6)
 
 # Search by Song
-artist_lbl = Label(search_song_fr, text="By Song")
+artist_lbl = Label(search_song_fr, text="By Song\t")
 artist_lbl.pack(side=tk.LEFT, padx=10)
 artist_ent = Entry(search_song_fr, textvariable=song_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
