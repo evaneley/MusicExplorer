@@ -16,15 +16,16 @@ result_wrapper = LabelFrame(root, text="Results")
 search_wrapper = LabelFrame(root, text="Search")
 search_song_fr = Frame(search_wrapper)
 search_artist_fr = Frame(search_wrapper)
-#search_artist_fr = Frame(search_wrapper)
+search_album_fr = Frame(search_wrapper)
 #search_artist_fr = Frame(search_wrapper)
 yt_wrapper = LabelFrame(root, text="Go To YouTube")
 
 # Pack Frames
 result_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
 search_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
-search_artist_fr.pack(fill="x")
-search_song_fr.pack(fill="x")
+search_artist_fr.pack(fill="x", pady=10)
+search_song_fr.pack(fill="x", pady=10)
+search_album_fr.pack(fill="x", pady=10)
 yt_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
 
 # Create Treeview
@@ -40,6 +41,7 @@ trv.heading(4, text="Date")
 # Variables
 artist_query = StringVar()
 song_query = StringVar()
+album_query = StringVar()
 yt_query = StringVar()
 
 
@@ -54,9 +56,16 @@ def get_release(song):
                     date = release["date"]
                     album = release["title"]
                 else:
+                    #Check if year is less
                     if int(release["date"][0:4]) < int(date[0:4]):
-                        date = release["date"]
-                        album = release["title"]
+                        #If year is same, check month (both dates must have a month)
+                        if (int(release["date"][0:4]) == int(date[0:4])) and len(release["date"]) >= 7 and len(date) >= 7:
+                            if int(release["date"][6:7]) < int(date[6:7]):
+                                date = release["date"]
+                                album = release["title"]
+                        else:
+                            date = release["date"]
+                            album = release["title"]
     
     #print(date)
     #print(album)
@@ -68,23 +77,25 @@ def get_release(song):
 def update_artist(res):
     trv.delete(*trv.get_children())
     for artist in res["artist-list"]:
-        trv.insert('', 'end', values=("null", artist["name"], "null", "null"))
+        trv.insert('', 'end', values=("", artist["name"], "", ""))
 
 
 # Update table with songs
 def update_song(res):
-    yo = False
     trv.delete(*trv.get_children())
     for song in res["recording-list"]:
         #Get Album and Date
         album, date = get_release(song)
         trv.insert('', 'end', values=(
             song["title"], song["artist-credit"][0]["name"], album, date))
-        if yo == False:
 
-            yo = True
-        # print()
 
+# Update table with albums
+def update_album(res):
+    trv.delete(*trv.get_children())
+    for album in res["release-list"]:
+        trv.insert('', 'end', values=("", album["artist-credit"][0]["name"], album["title"], album["date"]))
+        #print(album)
 
 # Search for Artist
 def artist_search():
@@ -96,8 +107,15 @@ def artist_search():
 # Search for Songs
 def song_search():
     song_result = musicbrainzngs.search_recordings(
-        release=song_query.get(), artistname=artist_query.get())
+        recording=song_query.get(), artistname=artist_query.get(), release=album_query.get())
     update_song(song_result)
+    update_yt()
+
+
+# Search for Albums
+def album_search():
+    album_result = musicbrainzngs.search_releases(release=album_query.get(), artistname=artist_query.get())
+    update_album(album_result)
     update_yt()
 
 
@@ -108,6 +126,7 @@ def clear():
     # Clear text fields
     artist_query.set("")
     song_query.set("")
+    album_query.set("")
     yt_query.set("")
 
 
@@ -145,6 +164,14 @@ artist_lbl.pack(side=tk.LEFT, padx=10)
 artist_ent = Entry(search_song_fr, textvariable=song_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
 artist_btn = Button(search_song_fr, text="Search", command=song_search)
+artist_btn.pack(side=tk.LEFT, padx=6)
+
+# Search by Album
+artist_lbl = Label(search_album_fr, text="By Album\t")
+artist_lbl.pack(side=tk.LEFT, padx=10)
+artist_ent = Entry(search_album_fr, textvariable=album_query)
+artist_ent.pack(side=tk.LEFT, padx=6)
+artist_btn = Button(search_album_fr, text="Search", command=album_search)
 artist_btn.pack(side=tk.LEFT, padx=6)
 
 # Clear All Button
