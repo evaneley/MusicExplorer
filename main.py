@@ -45,6 +45,20 @@ album_query = StringVar()
 yt_query = StringVar()
 
 
+# On double click, set search fields with selected item
+def double_click(event):
+    item = trv.selection()[0]
+    values = trv.item(item, "values")
+    song_query.set(values[0])
+    artist_query.set(values[1])
+    album_query.set(values[2])
+    update_yt()
+
+# Define a double click event in the TreeView
+trv.bind("<Double-1>", double_click)
+
+
+# Get the album and date of a song
 def get_release(song):
     date = ""
     album = ""
@@ -94,7 +108,11 @@ def update_song(res):
 def update_album(res):
     trv.delete(*trv.get_children())
     for album in res["release-list"]:
-        trv.insert('', 'end', values=("", album["artist-credit"][0]["name"], album["title"], album["date"]))
+        #Get Date
+        date = ""
+        if "date" in album:
+            date = album["date"]
+        trv.insert('', 'end', values=("", album["artist-credit"][0]["name"], album["title"], date))
         #print(album)
 
 # Search for Artist
@@ -147,6 +165,8 @@ def update_yt():
         yt += song_query.get() + " "
     if artist_query.get() != "":
         yt += artist_query.get() + " "
+    if album_query.get() != "":
+        yt += album_query.get() + " "
     yt_query.set(yt)
 
 
@@ -167,8 +187,8 @@ artist_btn = Button(search_song_fr, text="Search", command=song_search)
 artist_btn.pack(side=tk.LEFT, padx=6)
 
 # Search by Album
-artist_lbl = Label(search_album_fr, text="By Album\t")
-artist_lbl.pack(side=tk.LEFT, padx=10)
+artist_lbl = Label(search_album_fr, text="By Album")
+artist_lbl.pack(side=tk.LEFT, padx=8)
 artist_ent = Entry(search_album_fr, textvariable=album_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
 artist_btn = Button(search_album_fr, text="Search", command=album_search)
