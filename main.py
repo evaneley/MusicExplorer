@@ -57,7 +57,7 @@ def double_click(event):
     song_query.set(values[0])
     artist_query.set(values[1])
     album_query.set(values[2])
-    year_query.set(values[3][0:4])
+    # year_query.set(values[3][0:4])
     update_yt()
 
 
@@ -302,6 +302,7 @@ def clear():
     song_query.set("")
     album_query.set("")
     yt_query.set("")
+    year_query.set("")
     # Reset buttons
     bf_btn.config(relief="raised")
     ex_btn.config(relief="raised")
