@@ -57,6 +57,7 @@ def double_click(event):
     song_query.set(values[0])
     artist_query.set(values[1])
     album_query.set(values[2])
+    year_query.set(values[3][0:4])
     update_yt()
 
 
@@ -92,6 +93,32 @@ def get_release(song):
     return album, date
 
 
+# Check year_query to make sure it is properly formatted
+# If there is an entry, one of the buttons must be toggled
+def check_valid_yr():
+    # Input, but not correct format
+    if len(year_query.get()) != 4 and year_query.get() != "":
+        tk.messagebox.showerror(
+            title="Error", message="Invalid Year. Use format YYYY.")
+        return False
+    # Input, but no button selected
+    elif (year_query.get() != "") and (not year_bf) and (not year_ex) and (not year_af):
+        tk.messagebox.showerror(
+            title="Error", message="Please select an option for the year")
+    # No input, but a button selected (just reset button and let happen)
+    elif (year_query.get() == "") and (year_bf or year_ex or year_af):
+        if year_bf:
+            tgl_bf()
+        elif year_ex:
+            tgl_ex()
+        else:
+            tgl_af()
+        return True
+    # Valid entry
+    else:
+        return True
+
+
 # Update table with artist
 def update_artist(res):
     trv.delete(*trv.get_children())
@@ -101,30 +128,100 @@ def update_artist(res):
 
 # Update table with songs
 def update_song(res):
-    trv.delete(*trv.get_children())
-    for song in res["recording-list"]:
-        # Get Album and Date
-        album, date = get_release(song)
-        trv.insert('', 'end', values=(
-            song["title"], song["artist-credit"][0]["name"], album, date))
+    # Import globals
+    global year_bf
+    global year_ex
+    global year_af
+    if check_valid_yr():
+        year = year_query.get()
+        trv.delete(*trv.get_children())
+        # Get songs before entered year
+        if year_bf:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                if date != "" and int(date[0:4]) < int(year):
+                    trv.insert('', 'end', values=(
+                        song["title"], song["artist-credit"][0]["name"], album, date))
+        # Get songs on entered year
+        elif year_ex:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                if date != "" and int(date[0:4]) == int(year):
+                    trv.insert('', 'end', values=(
+                        song["title"], song["artist-credit"][0]["name"], album, date))
+        # Get songs after entered year
+        elif year_af:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                if date != "" and int(date[0:4]) > int(year):
+                    trv.insert('', 'end', values=(
+                        song["title"], song["artist-credit"][0]["name"], album, date))
+        # No year filter
+        else:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                trv.insert('', 'end', values=(
+                    song["title"], song["artist-credit"][0]["name"], album, date))
 
 
 # Update table with albums
 def update_album(res):
-    trv.delete(*trv.get_children())
-    for album in res["release-list"]:
-        # Get Date
-        date = ""
-        if "date" in album:
-            date = album["date"]
-        trv.insert('', 'end', values=(
-            "", album["artist-credit"][0]["name"], album["title"], date))
-        # print(album)
+    # Import globals
+    global year_bf
+    global year_ex
+    global year_af
+    if check_valid_yr():
+        year = year_query.get()
+        trv.delete(*trv.get_children())
+        # Get albums before entered year
+        if year_bf:
+            for album in res["release-list"]:
+                # Get Date
+                date = ""
+                if "date" in album:
+                    date = album["date"]
+                if date != "" and date[0:4] < year:
+                    trv.insert('', 'end', values=(
+                        "", album["artist-credit"][0]["name"], album["title"], date))
+        # Get albums on entered year
+        elif year_ex:
+            for album in res["release-list"]:
+                # Get Date
+                date = ""
+                if "date" in album:
+                    date = album["date"]
+                if date != "" and date[0:4] == year:
+                    trv.insert('', 'end', values=(
+                        "", album["artist-credit"][0]["name"], album["title"], date))
+        # Get albums after entered year
+        elif year_af:
+            for album in res["release-list"]:
+                # Get Date
+                date = ""
+                if "date" in album:
+                    date = album["date"]
+                if date != "" and date[0:4] > year:
+                    trv.insert('', 'end', values=(
+                        "", album["artist-credit"][0]["name"], album["title"], date))
+        # No filter
+        else:
+            for album in res["release-list"]:
+                # Get Date
+                date = ""
+                if "date" in album:
+                    date = album["date"]
+                trv.insert('', 'end', values=(
+                    "", album["artist-credit"][0]["name"], album["title"], date))
 
 
 # Search for Artist
 def artist_search():
-    artist_result = musicbrainzngs.search_artists(artist=artist_query.get())
+    artist_result = musicbrainzngs.search_artists(
+        artist=artist_query.get(), limit=100)
     update_artist(artist_result)
     update_yt()
 
@@ -132,7 +229,7 @@ def artist_search():
 # Search for Songs
 def song_search():
     song_result = musicbrainzngs.search_recordings(
-        recording=song_query.get(), artistname=artist_query.get(), release=album_query.get())
+        recording=song_query.get(), artistname=artist_query.get(), release=album_query.get(), limit=100)
     update_song(song_result)
     update_yt()
 
@@ -140,13 +237,16 @@ def song_search():
 # Search for Albums
 def album_search():
     album_result = musicbrainzngs.search_releases(
-        release=album_query.get(), artistname=artist_query.get())
+        release=album_query.get(), artistname=artist_query.get(), limit=100)
     update_album(album_result)
     update_yt()
 
 
 # Toggle "Before" Button for Year Filter
 def tgl_bf():
+    global year_bf
+    global year_ex
+    global year_af
     if bf_btn.config('relief')[-1] == 'sunken':
         bf_btn.config(relief="raised")
         year_bf = False
@@ -161,6 +261,9 @@ def tgl_bf():
 
 # Toggle "Exact" Button for Year Filter
 def tgl_ex():
+    global year_bf
+    global year_ex
+    global year_af
     if ex_btn.config('relief')[-1] == 'sunken':
         ex_btn.config(relief="raised")
         year_ex = False
@@ -175,6 +278,9 @@ def tgl_ex():
 
 # Toggle "After" Button for Year Filter
 def tgl_af():
+    global year_bf
+    global year_ex
+    global year_af
     if af_btn.config('relief')[-1] == 'sunken':
         af_btn.config(relief="raised")
         year_af = False
@@ -196,6 +302,10 @@ def clear():
     song_query.set("")
     album_query.set("")
     yt_query.set("")
+    # Reset buttons
+    bf_btn.config(relief="raised")
+    ex_btn.config(relief="raised")
+    af_btn.config(relief="raised")
 
 
 # Searches what the user has entered on YouTube
@@ -203,7 +313,11 @@ def yt_search():
     search_term = yt_query.get().split()
     search_term_string = ""
     for i in search_term:
-        search_term_string += i + "+"
+        if i != "&" and i != "?":
+            search_term_string += i + "+"
+        elif i == "&":
+            # Replace '&' char to avoid breaking query
+            search_term_string += "and+"
     search_url = "https://www.youtube.com/results?search_query=" + search_term_string
     webbrowser.open(search_url)
 
