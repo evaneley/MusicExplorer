@@ -17,7 +17,7 @@ search_wrapper = LabelFrame(root, text="Search")
 search_song_fr = Frame(search_wrapper)
 search_artist_fr = Frame(search_wrapper)
 search_album_fr = Frame(search_wrapper)
-#search_artist_fr = Frame(search_wrapper)
+filter_year_fr = Frame(search_wrapper)
 yt_wrapper = LabelFrame(root, text="Go To YouTube")
 
 # Pack Frames
@@ -26,6 +26,7 @@ search_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
 search_artist_fr.pack(fill="x", pady=10)
 search_song_fr.pack(fill="x", pady=10)
 search_album_fr.pack(fill="x", pady=10)
+filter_year_fr.pack(fill="x", pady=10)
 yt_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
 
 # Create Treeview
@@ -43,6 +44,10 @@ artist_query = StringVar()
 song_query = StringVar()
 album_query = StringVar()
 yt_query = StringVar()
+year_query = StringVar()
+year_bf = False
+year_ex = False
+year_af = False
 
 
 # On double click, set search fields with selected item
@@ -53,6 +58,7 @@ def double_click(event):
     artist_query.set(values[1])
     album_query.set(values[2])
     update_yt()
+
 
 # Define a double click event in the TreeView
 trv.bind("<Double-1>", double_click)
@@ -65,14 +71,14 @@ def get_release(song):
     if "release-list" in song:
         for release in song["release-list"]:
             if "date" in release and release["date"] != "":
-                #print(release["date"])
+                # print(release["date"])
                 if date == "":
                     date = release["date"]
                     album = release["title"]
                 else:
-                    #Check if year is less
+                    # Check if year is less
                     if int(release["date"][0:4]) < int(date[0:4]):
-                        #If year is same, check month (both dates must have a month)
+                        # If year is same, check month (both dates must have a month)
                         if (int(release["date"][0:4]) == int(date[0:4])) and len(release["date"]) >= 7 and len(date) >= 7:
                             if int(release["date"][6:7]) < int(date[6:7]):
                                 date = release["date"]
@@ -80,11 +86,10 @@ def get_release(song):
                         else:
                             date = release["date"]
                             album = release["title"]
-    
-    #print(date)
-    #print(album)
+
+    # print(date)
+    # print(album)
     return album, date
-        
 
 
 # Update table with artist
@@ -98,7 +103,7 @@ def update_artist(res):
 def update_song(res):
     trv.delete(*trv.get_children())
     for song in res["recording-list"]:
-        #Get Album and Date
+        # Get Album and Date
         album, date = get_release(song)
         trv.insert('', 'end', values=(
             song["title"], song["artist-credit"][0]["name"], album, date))
@@ -108,12 +113,14 @@ def update_song(res):
 def update_album(res):
     trv.delete(*trv.get_children())
     for album in res["release-list"]:
-        #Get Date
+        # Get Date
         date = ""
         if "date" in album:
             date = album["date"]
-        trv.insert('', 'end', values=("", album["artist-credit"][0]["name"], album["title"], date))
-        #print(album)
+        trv.insert('', 'end', values=(
+            "", album["artist-credit"][0]["name"], album["title"], date))
+        # print(album)
+
 
 # Search for Artist
 def artist_search():
@@ -132,9 +139,52 @@ def song_search():
 
 # Search for Albums
 def album_search():
-    album_result = musicbrainzngs.search_releases(release=album_query.get(), artistname=artist_query.get())
+    album_result = musicbrainzngs.search_releases(
+        release=album_query.get(), artistname=artist_query.get())
     update_album(album_result)
     update_yt()
+
+
+# Toggle "Before" Button for Year Filter
+def tgl_bf():
+    if bf_btn.config('relief')[-1] == 'sunken':
+        bf_btn.config(relief="raised")
+        year_bf = False
+    else:
+        bf_btn.config(relief="sunken")
+        year_bf = True
+        ex_btn.config(relief="raised")
+        year_ex = False
+        af_btn.config(relief="raised")
+        year_af = False
+
+
+# Toggle "Exact" Button for Year Filter
+def tgl_ex():
+    if ex_btn.config('relief')[-1] == 'sunken':
+        ex_btn.config(relief="raised")
+        year_ex = False
+    else:
+        bf_btn.config(relief="raised")
+        year_bf = False
+        ex_btn.config(relief="sunken")
+        year_ex = True
+        af_btn.config(relief="raised")
+        year_af = False
+
+
+# Toggle "After" Button for Year Filter
+def tgl_af():
+    if af_btn.config('relief')[-1] == 'sunken':
+        af_btn.config(relief="raised")
+        year_af = False
+    else:
+        bf_btn.config(relief="raised")
+        year_bf = False
+        ex_btn.config(relief="raised")
+        year_ex = False
+        af_btn.config(relief="sunken")
+        year_af = True
 
 
 # Clears all entries from results
@@ -193,6 +243,21 @@ artist_ent = Entry(search_album_fr, textvariable=album_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
 artist_btn = Button(search_album_fr, text="Search", command=album_search)
 artist_btn.pack(side=tk.LEFT, padx=6)
+
+# Filter by Year
+year_lbl = Label(filter_year_fr, text="Filter Year")
+year_lbl.pack(side=tk.LEFT, padx=8)
+year_ent = Entry(filter_year_fr, textvariable=year_query)
+year_ent.pack(side=tk.LEFT, padx=6)
+bf_btn = Button(filter_year_fr, text="Before",
+                relief="raised", command=tgl_bf)
+bf_btn.pack(side=tk.LEFT, padx=6)
+ex_btn = Button(filter_year_fr, text="Exact",
+                relief="raised", command=tgl_ex)
+ex_btn.pack(side=tk.LEFT, padx=6)
+af_btn = Button(filter_year_fr, text="After",
+                relief="raised", command=tgl_af)
+af_btn.pack(side=tk.LEFT, padx=6)
 
 # Clear All Button
 clr = Button(search_wrapper, text="Clear All", command=clear)
