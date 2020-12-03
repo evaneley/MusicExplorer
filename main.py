@@ -18,6 +18,7 @@ search_song_fr = Frame(search_wrapper)
 search_artist_fr = Frame(search_wrapper)
 search_album_fr = Frame(search_wrapper)
 filter_year_fr = Frame(search_wrapper)
+buttons_fr = Frame(search_wrapper)
 yt_wrapper = LabelFrame(root, text="Go To YouTube")
 
 # Pack Frames
@@ -27,17 +28,22 @@ search_artist_fr.pack(fill="x", pady=10)
 search_song_fr.pack(fill="x", pady=10)
 search_album_fr.pack(fill="x", pady=10)
 filter_year_fr.pack(fill="x", pady=10)
+buttons_fr.pack(fill="x", pady=10)
 yt_wrapper.pack(fill="both", expand=1, padx=20, pady=10)
 
 # Create Treeview
 trv = ttk.Treeview(result_wrapper, columns=(
     1, 2, 3, 4), show="headings", height="10")
-trv.pack(fill="both", expand=1, padx=5, pady=5)
+trv.pack(side="left", fill="both", expand=1, padx=5, pady=5)
 # Make headings
 trv.heading(1, text="Song")
 trv.heading(2, text="Artist")
 trv.heading(3, text="Album")
 trv.heading(4, text="Date")
+# Add a scrollbar to treeview
+scrlbar = ttk.Scrollbar(result_wrapper, orient="vertical", command=trv.yview)
+scrlbar.pack(side='right', fill='y')
+trv.configure(yscrollcommand=scrlbar.set)
 
 # Variables
 artist_query = StringVar()
@@ -48,6 +54,8 @@ year_query = StringVar()
 year_bf = False
 year_ex = False
 year_af = False
+song_wc = False
+album_wc = False
 
 
 # On double click, set search fields with selected item
@@ -293,7 +301,58 @@ def tgl_af():
         year_af = True
 
 
+# Toggle Song Wildcard Button
+def tgl_song():
+    global song_wc
+    if song_btn.config('relief')[-1] == 'sunken':
+        song_btn.config(relief="raised")
+        song_wc = False
+    else:
+        song_btn.config(relief="sunken")
+        song_wc = True
+
+
+# Toggle Album Wildcard Button
+def tgl_album():
+    global album_wc
+    if album_btn.config('relief')[-1] == 'sunken':
+        album_btn.config(relief="raised")
+        album_wc = False
+    else:
+        album_btn.config(relief="sunken")
+        album_wc = True
+
+
+# Execute proper search based on user's input
+def search():
+    # If both WC buttons are pressed, toggle album (song search should be done)
+    if song_wc and album_wc:
+        tgl_album()
+    # Nothing entered, do nothing
+    if song_query.get() == "" and artist_query.get() == "" and album_query.get() == "":
+        return
+    # If song is entered, or song wildcard selected, do a song search
+    elif song_query.get() != "" or song_wc:
+        # If album wildcard was set, reset it
+        if album_wc:
+            tgl_album()
+        # If user entered in song field and song_wc is set, reset song_wc
+        if song_wc and song_query.get() != "":
+            tgl_song()
+        song_search()
+    # Album is entered but no song, or album wildcard selected do an album search
+    elif album_query.get() != "" or album_wc:
+        # If user entered in album field and album_wc is set, reset album_wc
+        if album_wc and album_query.get() != "":
+            tgl_album()
+        album_search()
+    # Only artist entered, search artist
+    else:
+        artist_search()
+
 # Clears all entries from results
+
+
 def clear():
     # Clear search results
     trv.delete(*trv.get_children())
@@ -304,9 +363,16 @@ def clear():
     yt_query.set("")
     year_query.set("")
     # Reset buttons
-    bf_btn.config(relief="raised")
-    ex_btn.config(relief="raised")
-    af_btn.config(relief="raised")
+    if year_bf:
+        tgl_bf()
+    if year_ex:
+        tgl_ex()
+    if year_af:
+        tgl_af()
+    if song_wc:
+        tgl_song()
+    if album_wc:
+        tgl_album()
 
 
 # Searches what the user has entered on YouTube
@@ -340,24 +406,24 @@ artist_lbl = Label(search_artist_fr, text="By Artist\t")
 artist_lbl.pack(side=tk.LEFT, padx=10)
 artist_ent = Entry(search_artist_fr, textvariable=artist_query)
 artist_ent.pack(side=tk.LEFT, padx=6)
-artist_btn = Button(search_artist_fr, text="Search", command=artist_search)
-artist_btn.pack(side=tk.LEFT, padx=6)
 
 # Search by Song
-artist_lbl = Label(search_song_fr, text="By Song\t")
-artist_lbl.pack(side=tk.LEFT, padx=10)
-artist_ent = Entry(search_song_fr, textvariable=song_query)
-artist_ent.pack(side=tk.LEFT, padx=6)
-artist_btn = Button(search_song_fr, text="Search", command=song_search)
-artist_btn.pack(side=tk.LEFT, padx=6)
+song_lbl = Label(search_song_fr, text="By Song\t")
+song_lbl.pack(side=tk.LEFT, padx=10)
+song_ent = Entry(search_song_fr, textvariable=song_query)
+song_ent.pack(side=tk.LEFT, padx=6)
+song_btn = Button(search_song_fr, text="See All",
+                  command=tgl_song, relief="raised")
+song_btn.pack(side=tk.LEFT, padx=6)
 
 # Search by Album
-artist_lbl = Label(search_album_fr, text="By Album")
-artist_lbl.pack(side=tk.LEFT, padx=8)
-artist_ent = Entry(search_album_fr, textvariable=album_query)
-artist_ent.pack(side=tk.LEFT, padx=6)
-artist_btn = Button(search_album_fr, text="Search", command=album_search)
-artist_btn.pack(side=tk.LEFT, padx=6)
+album_lbl = Label(search_album_fr, text="By Album")
+album_lbl.pack(side=tk.LEFT, padx=8)
+album_ent = Entry(search_album_fr, textvariable=album_query)
+album_ent.pack(side=tk.LEFT, padx=6)
+album_btn = Button(search_album_fr, text="See All",
+                   command=tgl_album, relief="raised")
+album_btn.pack(side=tk.LEFT, padx=6)
 
 # Filter by Year
 year_lbl = Label(filter_year_fr, text="Filter Year")
@@ -374,9 +440,11 @@ af_btn = Button(filter_year_fr, text="After",
                 relief="raised", command=tgl_af)
 af_btn.pack(side=tk.LEFT, padx=6)
 
-# Clear All Button
-clr = Button(search_wrapper, text="Clear All", command=clear)
-clr.pack(side=tk.RIGHT, padx=10)
+# Search and Clear All Buttons
+search_btn = Button(buttons_fr, text="Search", command=search)
+search_btn.pack(side=tk.LEFT, padx=10)
+clr = Button(buttons_fr, text="Clear All", command=clear)
+clr.pack(side=tk.LEFT, padx=10)
 
 # YouTube Search
 _lbl = Label(yt_wrapper, text="Search for \"")
