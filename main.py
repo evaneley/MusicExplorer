@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 # Initialize agent to DB
 musicbrainzngs.set_useragent(
-    "MusicExplorer", "0.0.1", contact="evan_eley@yahoo.com")
+    "MusicExplorer", "0.0.1", contact="ee991216@ohio.edu")
 
 root = Tk()
 
