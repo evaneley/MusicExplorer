@@ -447,11 +447,11 @@ clr = Button(buttons_fr, text="Clear All", command=clear)
 clr.pack(side=tk.LEFT, padx=10)
 
 # YouTube Search
-_lbl = Label(yt_wrapper, text="Search for \"")
+_lbl = Label(yt_wrapper, text="Search for")
 _lbl.pack(side=tk.LEFT)
 prev_lbl = Label(yt_wrapper, textvariable=yt_query)
 prev_lbl.pack(side=tk.LEFT)
-lbl_ = Label(yt_wrapper, text="\" on YouTube")
+lbl_ = Label(yt_wrapper, text="on YouTube")
 lbl_.pack(side=tk.LEFT)
 yt_btn = Button(yt_wrapper, text="Go", command=yt_search)
 yt_btn.pack(side=tk.LEFT, padx=20)
