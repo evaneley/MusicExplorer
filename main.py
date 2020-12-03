@@ -89,7 +89,7 @@ def get_release(song):
                     if int(release["date"][0:4]) < int(date[0:4]):
                         # If year is same, check month (both dates must have a month)
                         if (int(release["date"][0:4]) == int(date[0:4])) and len(release["date"]) >= 7 and len(date) >= 7:
-                            if int(release["date"][6:7]) < int(date[6:7]):
+                            if int(release["date"][5:7]) < int(date[5:7]):
                                 date = release["date"]
                                 album = release["title"]
                         else:
