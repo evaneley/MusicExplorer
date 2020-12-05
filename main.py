@@ -51,11 +51,15 @@ song_query = StringVar()
 album_query = StringVar()
 yt_query = StringVar()
 year_query = StringVar()
+b_range = StringVar()
+e_range = StringVar()
 year_bf = False
 year_ex = False
 year_af = False
 song_wc = False
 album_wc = False
+incl = False
+excl = False
 
 
 # On double click, set search fields with selected item
@@ -104,25 +108,51 @@ def get_release(song):
 # Check year_query to make sure it is properly formatted
 # If there is an entry, one of the buttons must be toggled
 def check_valid_yr():
-    # Input, but not correct format
-    if len(year_query.get()) != 4 and year_query.get() != "":
-        tk.messagebox.showerror(
-            title="Error", message="Invalid Year. Use format YYYY.")
-        return False
-    # Input, but no button selected
-    elif (year_query.get() != "") and (not year_bf) and (not year_ex) and (not year_af):
-        tk.messagebox.showerror(
-            title="Error", message="Please select an option for the year")
-    # No input, but a button selected (just reset button and let happen)
-    elif (year_query.get() == "") and (year_bf or year_ex or year_af):
-        if year_bf:
-            tgl_bf()
-        elif year_ex:
-            tgl_ex()
+    # Import Globals
+    global year_bf
+    global year_ex
+    global year_af
+    global incl
+    global excl
+    # Check if it is a single year filter
+    if year_bf or year_ex or year_af:
+        # Input, but not correct format
+        if len(year_query.get()) != 4 and year_query.get() != "":
+            tk.messagebox.showerror(
+                title="Error", message="Invalid Year. Use format YYYY.")
+            return False
+        # No input, but a button selected (just reset button and let happen)
+        elif year_query.get() == "":
+            if year_bf:
+                tgl_bf()
+            elif year_ex:
+                tgl_ex()
+            else:
+                tgl_af()
+            return True
+        # Valid entry
         else:
-            tgl_af()
-        return True
-    # Valid entry
+            return True
+    elif incl or excl:
+        # Input, but not correct format
+        if (len(b_range.get()) != 4 and b_range.get() != "") or (len(e_range.get()) != 4 and e_range.get() != ""):
+            tk.messagebox.showerror(
+                title="Error", message="Invalid Year. Use format YYYY.")
+            return False
+        # No input, but a button selected (just reset button and let happen)
+        elif b_range.get() == "" and e_range.get() == "":
+            if incl:
+                tgl_incl()
+            else:
+                tgl_excl()
+            return True
+        # Correct format, but invalid range
+        elif int(b_range.get()) > int(e_range.get()):
+            tk.messagebox.showerror(title="Error", message="Invalid Range.")
+            return False
+        # Valid Range
+        else:
+            return True
     else:
         return True
 
@@ -140,8 +170,12 @@ def update_song(res):
     global year_bf
     global year_ex
     global year_af
+    global incl
+    global excl
     if check_valid_yr():
         year = year_query.get()
+        brng = b_range.get()
+        erng = e_range.get()
         trv.delete(*trv.get_children())
         # Get songs before entered year
         if year_bf:
@@ -165,6 +199,21 @@ def update_song(res):
                 # Get Album and Date
                 album, date = get_release(song)
                 if date != "" and int(date[0:4]) > int(year):
+                    trv.insert('', 'end', values=(
+                        song["title"], song["artist-credit"][0]["name"], album, date))
+        # Get songs in range
+        elif incl:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                if date != "" and int(date[0:4]) >= int(brng) and int(date[0:4]) <= int(erng):
+                    trv.insert('', 'end', values=(
+                        song["title"], song["artist-credit"][0]["name"], album, date))
+        elif excl:
+            for song in res["recording-list"]:
+                # Get Album and Date
+                album, date = get_release(song)
+                if date != "" and (int(date[0:4]) < int(brng) or int(date[0:4]) > int(erng)):
                     trv.insert('', 'end', values=(
                         song["title"], song["artist-credit"][0]["name"], album, date))
         # No year filter
@@ -255,6 +304,8 @@ def tgl_bf():
     global year_bf
     global year_ex
     global year_af
+    global incl
+    global excl
     if bf_btn.config('relief')[-1] == 'sunken':
         bf_btn.config(relief="raised")
         year_bf = False
@@ -265,6 +316,10 @@ def tgl_bf():
         year_ex = False
         af_btn.config(relief="raised")
         year_af = False
+        incl_btn.config(relief="raised")
+        incl = False
+        excl_btn.config(relief="raised")
+        excl = False
 
 
 # Toggle "Exact" Button for Year Filter
@@ -272,6 +327,8 @@ def tgl_ex():
     global year_bf
     global year_ex
     global year_af
+    global incl
+    global excl
     if ex_btn.config('relief')[-1] == 'sunken':
         ex_btn.config(relief="raised")
         year_ex = False
@@ -282,6 +339,10 @@ def tgl_ex():
         year_ex = True
         af_btn.config(relief="raised")
         year_af = False
+        incl_btn.config(relief="raised")
+        incl = False
+        excl_btn.config(relief="raised")
+        excl = False
 
 
 # Toggle "After" Button for Year Filter
@@ -289,6 +350,8 @@ def tgl_af():
     global year_bf
     global year_ex
     global year_af
+    global incl
+    global excl
     if af_btn.config('relief')[-1] == 'sunken':
         af_btn.config(relief="raised")
         year_af = False
@@ -299,6 +362,10 @@ def tgl_af():
         year_ex = False
         af_btn.config(relief="sunken")
         year_af = True
+        incl_btn.config(relief="raised")
+        incl = False
+        excl_btn.config(relief="raised")
+        excl = False
 
 
 # Toggle Song Wildcard Button
@@ -322,6 +389,51 @@ def tgl_album():
         album_btn.config(relief="sunken")
         album_wc = True
 
+
+# Toggle "Include" Button
+def tgl_incl():
+    global incl
+    global excl
+    global year_bf
+    global year_ex
+    global year_af
+    if incl_btn.config('relief')[-1] == 'sunken':
+        incl_btn.config(relief="raised")
+        incl = False
+    else:
+        incl_btn.config(relief="sunken")
+        incl = True
+        excl_btn.config(relief="raised")
+        excl = False
+        bf_btn.config(relief="raised")
+        year_bf = False
+        ex_btn.config(relief="raised")
+        year_ex = False
+        af_btn.config(relief="raised")
+        year_af = False
+
+
+# Toggle "Exclude" Button
+def tgl_excl():
+    global incl
+    global excl
+    global year_bf
+    global year_ex
+    global year_af
+    if excl_btn.config('relief')[-1] == 'sunken':
+        excl_btn.config(relief="raised")
+        excl = False
+    else:
+        excl_btn.config(relief="sunken")
+        excl = True
+        incl_btn.config(relief="raised")
+        incl = False
+        bf_btn.config(relief="raised")
+        year_bf = False
+        ex_btn.config(relief="raised")
+        year_ex = False
+        af_btn.config(relief="raised")
+        year_af = False
 
 # Execute proper search based on user's input
 def search():
@@ -350,9 +462,8 @@ def search():
     else:
         artist_search()
 
+
 # Clears all entries from results
-
-
 def clear():
     # Clear search results
     trv.delete(*trv.get_children())
@@ -362,6 +473,8 @@ def clear():
     album_query.set("")
     yt_query.set("")
     year_query.set("")
+    b_range.set("")
+    e_range.set("")
     # Reset buttons
     if year_bf:
         tgl_bf()
@@ -373,6 +486,10 @@ def clear():
         tgl_song()
     if album_wc:
         tgl_album()
+    if incl:
+        tgl_incl()
+    if excl:
+        tgl_excl()
 
 
 # Searches what the user has entered on YouTube
@@ -439,6 +556,23 @@ ex_btn.pack(side=tk.LEFT, padx=6)
 af_btn = Button(filter_year_fr, text="After",
                 relief="raised", command=tgl_af)
 af_btn.pack(side=tk.LEFT, padx=6)
+
+# Filter by Year Range
+or_lbl = Label(filter_year_fr, text="    OR\t Filter by Range")
+or_lbl.pack(side = tk.LEFT, padx=8)
+b_range_ent = Entry(filter_year_fr, textvariable=b_range, width=10)
+b_range_ent.pack(side=tk.LEFT)
+e_range_lbl = Label(filter_year_fr, text="-")
+e_range_lbl.pack(side=tk.LEFT)
+e_range_ent = Entry(filter_year_fr, textvariable=e_range, width=10)
+e_range_ent.pack(side=tk.LEFT)
+incl_btn = Button(filter_year_fr, text="Include",
+                relief="raised", command=tgl_incl)
+incl_btn.pack(side=tk.LEFT, padx=12)
+excl_btn = Button(filter_year_fr, text="Exclude",
+                relief="raised", command=tgl_excl)
+excl_btn.pack(side=tk.LEFT)
+
 
 # Search and Clear All Buttons
 search_btn = Button(buttons_fr, text="Search", command=search)
