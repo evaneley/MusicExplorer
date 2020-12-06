@@ -149,7 +149,7 @@ def check_valid_yr():
         # Valid entry
         else:
             return True
-    # Check if it is a rage filter
+    # Check if it is a range filter
     elif incl or excl:
         # Input, but not correct format
         if (len(b_range.get()) != 4 and b_range.get() != "") or (len(e_range.get()) != 4 and e_range.get() != ""):
@@ -575,6 +575,9 @@ def clear():
 
 # Searches what the user has entered on YouTube
 def yt_search():
+    # Prevent seaching for nothing
+    if yt_query.get() == "":
+        return
     # Split by space
     search_term = yt_query.get().split()
     search_term_string = ""
